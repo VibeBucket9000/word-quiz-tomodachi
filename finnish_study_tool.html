@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finnish Study Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #7C3AED; --purple-bg: #EDE9FE; --purple-border: #C4B5FD;
+  --purple-dark: #4C1D95; --purple-fill: #6D28D9;
+  --success-bg: #D1FAE5; --success-border: #6EE7B7; --success-text: #065F46;
+  --warn-bg: #FEF3C7; --warn-border: #FCD34D; --warn-text: #92400E;
+  --accent-bg: #DBEAFE; --accent-border: #93C5FD; --accent-text: #1E40AF;
+  --gray-50: #F9FAFB; --gray-100: #F3F4F6; --gray-200: #E5E7EB;
+  --gray-400: #9CA3AF; --gray-600: #4B5563; --gray-900: #111827;
+  --radius: 8px;
+}
+html, body { height: 100%; font-family: 'Nunito', 'Arial Rounded MT Bold', sans-serif; font-size: 14px; color: var(--gray-900); background: #F5F3FF; }
+
+/* Layout */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* Sidebar */
+.sidebar { width: 200px; background: #1A0030; display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-header { padding: 14px 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-title { font-size: 14px; font-weight: 800; color: white; }
+.sidebar-sub { font-size: 11px; color: #BF5FFF; margin-top: 1px; }
+.sidebar-list { flex: 1; overflow-y: auto; padding: 6px; }
+.sidebar-list::-webkit-scrollbar { width: 4px; }
+.sidebar-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+.quiz-btn { display: flex; align-items: flex-start; gap: 7px; width: 100%; text-align: left; background: transparent; color: rgba(255,255,255,0.6); border: none; border-radius: var(--radius); padding: 7px 8px; cursor: pointer; font-size: 12px; font-family: inherit; margin-bottom: 1px; line-height: 1.4; transition: background 0.12s, color 0.12s; }
+.quiz-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+.quiz-btn.active { background: #7C3AED; color: white; font-weight: 700; }
+.quiz-btn .qbicon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.topbar { padding: 10px 18px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: white; }
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.topbar-icon { font-size: 18px; }
+.topbar-title { font-weight: 700; font-size: 14px; }
+.topbar-count { font-size: 11px; color: var(--gray-400); }
+.mode-btns { display: flex; gap: 4px; }
+.mode-btn { padding: 5px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1.5px solid var(--gray-200); background: transparent; color: var(--gray-600); transition: all 0.12s; }
+.mode-btn:hover { border-color: var(--purple); color: var(--purple); }
+.mode-btn.active { background: var(--purple); color: white; border-color: var(--purple); }
+
+/* Content area */
+.content { flex: 1; overflow-y: auto; }
+
+/* ── LIST MODE ── */
+.list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.list-table thead tr { background: var(--purple-bg); }
+.list-table th { padding: 9px 12px; text-align: left; font-weight: 700; color: var(--purple-dark); white-space: nowrap; }
+.list-table th:last-child { width: 44px; text-align: center; }
+.list-table tbody tr { border-bottom: 1px solid var(--gray-100); }
+.list-table tbody tr:nth-child(even) { background: #FDFCFF; }
+.list-table td { padding: 7px 12px; }
+.td-num { color: var(--gray-400); font-size: 11px; width: 28px; }
+.td-en { color: var(--gray-600); }
+.td-fi { font-weight: 700; color: var(--purple); font-size: 15px; }
+.td-hint { color: var(--gray-400); font-style: italic; font-size: 11px; }
+.td-tts { text-align: center; }
+.tts-btn { background: var(--purple-bg); border: 1px solid var(--purple-border); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 14px; transition: background 0.1s; }
+.tts-btn:hover { background: var(--purple-border); }
+
+/* ── PHONOLOGY VIEW ── */
+.phono-wrap { padding: 16px 20px; }
+.phono-intro { font-size: 13px; color: var(--gray-600); line-height: 1.7; margin-bottom: 16px; }
+.phono-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+.phono-card { border: 1.5px solid var(--gray-200); border-radius: 12px; overflow: hidden; }
+.phono-half { padding: 12px; }
+.phono-half.back { background: var(--accent-bg); }
+.phono-half.front { background: var(--purple-bg); border-top: 1px solid var(--gray-200); }
+.phono-label { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 5px; }
+.phono-half.back .phono-label { color: var(--accent-text); }
+.phono-half.front .phono-label { color: var(--purple-dark); }
+.phono-vowel-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.phono-vowel { font-size: 30px; font-weight: 800; line-height: 1; }
+.phono-half.back .phono-vowel { color: var(--accent-text); }
+.phono-half.front .phono-vowel { color: var(--purple); }
+.phono-play { border: none; border-radius: 6px; padding: 2px 9px; cursor: pointer; font-size: 12px; font-family: inherit; font-weight: 700; }
+.phono-half.back .phono-play { background: var(--accent-bg); color: var(--accent-text); border: 1px solid var(--accent-border); }
+.phono-half.front .phono-play { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+.phono-desc { font-size: 11px; font-style: italic; margin-bottom: 7px; color: var(--gray-400); }
+.phono-word-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.phono-half.back .phono-word-btn { background: white; color: var(--accent-text); border: 1px solid var(--accent-border); }
+.phono-half.front .phono-word-btn { background: white; color: var(--purple); border: 1px solid var(--purple-border); }
+.phono-word-btn:hover { opacity: 0.85; }
+.phono-word-meaning { font-size: 10px; font-weight: 400; color: var(--gray-400); }
+.harmony-box { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: 10px; padding: 12px 14px; }
+.harmony-title { font-weight: 800; font-size: 12px; color: var(--warn-text); margin-bottom: 4px; }
+.harmony-text { font-size: 12px; color: var(--warn-text); line-height: 1.6; }
+
+/* ── DRILL MODE ── */
+.drill-wrap { padding: 18px 24px; max-width: 460px; margin: 0 auto; }
+.drill-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.drill-count { font-size: 11px; color: var(--gray-400); }
+.drill-restart { font-size: 11px; color: var(--gray-400); background: none; border: 1px solid var(--gray-200); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
+.drill-restart:hover { border-color: var(--purple); color: var(--purple); }
+.progress-bar { background: var(--gray-200); border-radius: 4px; height: 5px; margin-bottom: 18px; }
+.progress-fill { background: var(--purple); border-radius: 4px; height: 5px; transition: width 0.35s; }
+.drill-card { background: white; border: 1.5px solid var(--gray-200); border-radius: 14px; padding: 32px 24px; text-align: center; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.drill-prompt { font-size: 11px; color: var(--gray-400); margin-bottom: 10px; }
+.drill-word-en { font-size: 26px; font-weight: 800; color: var(--gray-900); margin-bottom: 22px; }
+.reveal-btn { background: var(--purple); color: white; border: none; border-radius: var(--radius); padding: 9px 22px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: background 0.12s; }
+.reveal-btn:hover { background: var(--purple-fill); }
+.drill-word-fi { font-size: 28px; font-weight: 800; color: var(--purple); margin-bottom: 3px; }
+.drill-hint { font-size: 12px; font-style: italic; color: var(--gray-400); margin-bottom: 10px; }
+.hear-btn { background: var(--purple-bg); border: 1px solid var(--purple-border); border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 12px; font-weight: 700; font-family: inherit; color: var(--purple); margin-bottom: 20px; }
+.hear-btn:hover { background: var(--purple-border); }
+.answer-btns { display: flex; gap: 10px; }
+.btn-still { background: var(--warn-bg); border: 1.5px solid var(--warn-border); border-radius: var(--radius); padding: 9px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--warn-text); transition: opacity 0.12s; }
+.btn-got { background: var(--success-bg); border: 1.5px solid var(--success-border); border-radius: var(--radius); padding: 9px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; color: var(--success-text); transition: opacity 0.12s; }
+.btn-still:hover, .btn-got:hover { opacity: 0.8; }
+.drill-stats { display: flex; justify-content: center; gap: 18px; margin-top: 14px; font-size: 11px; color: var(--gray-400); }
+.drill-done { padding: 36px 20px; text-align: center; }
+.done-icon { font-size: 52px; margin-bottom: 12px; }
+.done-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.done-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 20px; }
+.again-btn { background: var(--purple); color: white; border: none; border-radius: var(--radius); padding: 10px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.again-btn:hover { background: var(--purple-fill); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">🇫🇮 Finnish Study</div>
+    <div class="sidebar-sub">click a quiz to begin</div>
+  </div>
+  <div class="sidebar-list" id="sidebarList"></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-icon" id="topbarIcon"></span>
+      <span class="topbar-title" id="topbarTitle"></span>
+      <span class="topbar-count" id="topbarCount"></span>
+    </div>
+    <div class="mode-btns" id="modeBtns" style="display:none;">
+      <button class="mode-btn active" id="btnList" onclick="setMode('list')">📋 List</button>
+      <button class="mode-btn" id="btnDrill" onclick="setMode('drill')">🃏 Drill</button>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+</div>
+
+<script>
+// ── TTS ──────────────────────────────────────────────────────────────────────
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'fi-FI'; u.rate = 0.85;
+  window.speechSynthesis.speak(u);
+}
+
+// ── Shuffle ───────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── Quiz data [english, finnish, hint] ───────────────────────────────────────
+const QUIZZES = [
+  { id:1, name:'Phonology', icon:'🔊', type:'phonology' },
+  { id:2, name:'Numbers 1–20', icon:'🔢', words:[
+    ['one','yksi','UHK-see'],['two','kaksi','KAK-see'],['three','kolme','KOL-meh'],
+    ['four','neljä','NEL-yah'],['five','viisi','VEE-see'],['six','kuusi','KOO-see'],
+    ['seven','seitsemän','SAYT-seh-man'],['eight','kahdeksan','KAH-dehk-san'],
+    ['nine','yhdeksän','UH-dehk-san'],['ten','kymmenen','KUM-meh-nen'],
+    ['eleven','yksitoista','UHK-see-TOYS-tah'],['twelve','kaksitoista','KAK-see-TOYS-tah'],
+    ['thirteen','kolmetoista','KOL-meh-TOYS-tah'],['fourteen','neljätoista','NEL-yah-TOYS-tah'],
+    ['fifteen','viisitoista','VEE-see-TOYS-tah'],['sixteen','kuusitoista','KOO-see-TOYS-tah'],
+    ['seventeen','seitsemäntoista','SAYT-seh-man-TOYS-tah'],['eighteen','kahdeksantoista','KAH-dehk-san-TOYS-tah'],
+    ['nineteen','yhdeksäntoista','UH-dehk-san-TOYS-tah'],['twenty','kaksikymmentä','KAK-see-KUM-men-tah'],
+  ]},
+  { id:3, name:'Colors', icon:'🎨', words:[
+    ['red','punainen','poo-NAI-nen'],['blue','sininen','SEE-nee-nen'],['green','vihreä','VEE-reh-ah'],
+    ['yellow','keltainen','KEL-tai-nen'],['orange','oranssi','oh-RAN-see'],['purple','violetti','vee-oh-LET-tee'],
+    ['pink','vaaleanpunainen','VAH-leh-an-poo-NAI-nen'],['black','musta','MOOS-tah'],['white','valkoinen','VAL-koy-nen'],
+    ['gray','harmaa','HAR-mah'],['brown','ruskea','ROOS-keh-ah'],['turquoise','turkoosi','toor-KOH-see'],
+    ['gold','kulta','KOOL-tah'],['silver','hopea','HOH-peh-ah'],['beige','beige','bayj'],
+    ['dark blue','tummansininen','TOOM-man-SEE-nee-nen'],['light blue','vaaleansininen','VAH-leh-an-SEE-nee-nen'],
+    ['hot pink','pinkki','PINK-kee'],['lilac','lila','LEE-lah'],['bright','kirkas','KEER-kas'],
+  ]},
+  { id:4, name:'Family', icon:'👨‍👩‍👧', words:[
+    ['mother','äiti','AY-tee'],['father','isä','EE-sah'],['sister','sisko','SEES-koh'],['brother','veli','VEH-lee'],
+    ['grandmother','isoäiti','EE-soh-AY-tee'],['grandfather','isoisä','EE-soh-EE-sah'],
+    ['aunt','täti','TAH-tee'],['uncle','setä','SEH-tah'],['cousin','serkku','SERK-koo'],['baby','vauva','VAO-vah'],
+    ['child','lapsi','LAP-see'],['family','perhe','PEHR-heh'],['relative','sukulainen','SOO-koo-LAI-nen'],
+    ['husband','aviomies','AH-vee-oh-MYEHS'],['wife','vaimo','VAI-moh'],['daughter','tytär','TU-tahr'],
+    ['son','poika','POY-kah'],['parents','vanhemmat','VAN-hem-mat'],
+    ['siblings','sisarukset','SEE-sah-ROOK-set'],['friend','ystävä','US-tah-vah'],
+  ]},
+  { id:5, name:'Body Parts', icon:'🫀', words:[
+    ['head','pää','PAH'],['eye','silmä','SEEL-mah'],['ear','korva','KOR-vah'],['nose','nenä','NEH-nah'],
+    ['mouth','suu','SOO'],['tooth','hammas','HAM-mas'],['hand','käsi','KAH-see'],['finger','sormi','SOR-mee'],
+    ['leg / foot','jalka','YAL-kah'],['toe','varvas','VAR-vas'],['stomach','vatsa','VAT-sah'],['back','selkä','SEL-kah'],
+    ['shoulder','olkapää','OL-kah-PAH'],['knee','polvi','POL-vee'],['elbow','kyynärpää','KUH-nahr-PAH'],
+    ['chest','rinta','REEN-tah'],['neck','niska','NEES-kah'],['chin / jaw','leuka','LEH-oo-kah'],
+    ['forehead','otsa','OT-sah'],['tongue','kieli','KYEH-lee'],
+  ]},
+  { id:6, name:'Food & Drinks', icon:'🍎', words:[
+    ['bread','leipä','LAY-pah'],['milk','maito','MAI-toh'],['water','vesi','VEH-see'],['juice','mehu','MEH-hoo'],
+    ['rice','riisi','REE-see'],['chicken','kana','KAH-nah'],['fish','kala','KAH-lah'],['egg','muna','MOO-nah'],
+    ['cheese','juusto','YOO-stoh'],['apple','omena','OH-meh-nah'],['banana','banaani','bah-NAH-nee'],
+    ['potato','peruna','PEH-roo-nah'],['carrot','porkkana','PORK-kah-nah'],['pasta','pasta','PAH-stah'],
+    ['soup','keitto','KAYT-toh'],['ice cream','jäätelö','YAH-teh-luh'],['cake','kakku','KAK-koo'],
+    ['pizza','pizza','PEET-sah'],['yogurt','jogurtti','yoh-GOOR-tee'],['tea','tee','TEH'],
+  ]},
+  { id:7, name:'Animals', icon:'🐾', words:[
+    ['dog','koira','KOY-rah'],['cat','kissa','KEES-sah'],['horse','hevonen','HEH-voh-nen'],
+    ['cow','lehmä','LEH-mah'],['pig','sika','SEE-kah'],['sheep','lammas','LAM-mas'],
+    ['squirrel','orava','OH-rah-vah'],['bear','karhu','KAR-hoo'],['wolf','susi','SOO-see'],
+    ['fox','kettu','KET-too'],['rabbit / hare','jänis','YAH-nees'],['moose','hirvi','HEER-vee'],
+    ['reindeer','poro','POH-roh'],['bird','lintu','LEEN-too'],['fish','kala','KAH-lah'],
+    ['frog','sammakko','SAM-mak-koh'],['snake','käärme','KAR-meh'],['elephant','norsu','NOR-soo'],
+    ['tiger','tiikeri','TEE-keh-ree'],['monkey','apina','AH-pee-nah'],
+  ]},
+  { id:8, name:'Days & Months', icon:'📅', words:[
+    ['Monday','maanantai','MAH-nan-tai'],['Tuesday','tiistai','TEES-tai'],
+    ['Wednesday','keskiviikko','KES-kee-VEEK-koh'],['Thursday','torstai','TOR-stai'],
+    ['Friday','perjantai','PEHR-yan-tai'],['Saturday','lauantai','LAO-an-tai'],['Sunday','sunnuntai','SOON-noon-tai'],
+    ['January','tammikuu','TAM-mee-koo'],['February','helmikuu','HEL-mee-koo'],['March','maaliskuu','MAH-lees-koo'],
+    ['April','huhtikuu','HOOH-tee-koo'],['May','toukokuu','TOH-koh-koo'],['June','kesäkuu','KEH-sah-koo'],
+    ['July','heinäkuu','HAY-nah-koo'],['August','elokuu','EH-loh-koo'],['September','syyskuu','SUUS-koo'],
+    ['October','lokakuu','LOH-kah-koo'],['November','marraskuu','MAR-ras-koo'],
+    ['December','joulukuu','YOH-loo-koo'],['weekend','viikonloppu','VEE-kohn-LOP-poo'],
+  ]},
+  { id:9, name:'Classroom', icon:'📚', words:[
+    ['book','kirja','KEER-yah'],['notebook','vihko','VEEH-koh'],['pen / pencil','kynä','KU-nah'],
+    ['eraser','pyyhekumi','PUH-heh-koo-mee'],['ruler','viivain','VEE-vain'],['scissors','sakset','SAK-set'],
+    ['glue','liima','LEE-mah'],['backpack','reppu','REP-poo'],['chair','tuoli','TWOH-lee'],
+    ['table / desk','pöytä','PUH-tah'],['board','taulu','TAO-loo'],['teacher','opettaja','OH-pet-tah-yah'],
+    ['classroom','luokka','LWOHK-kah'],['recess / break','välitunti','VAH-lee-TOON-tee'],
+    ['homework','kotitehtävä','KOH-tee-TEHT-ah-vah'],['computer','tietokone','TYEH-toh-KOH-neh'],
+    ['drawing','piirustus','PEE-roos-toos'],['crayon','värikynä','VAH-ree-KU-nah'],
+    ['calendar','kalenteri','KAH-len-teh-ree'],['school','koulu','KOH-loo'],
+  ]},
+  { id:10, name:'Home & Rooms', icon:'🏠', words:[
+    ['home','koti','KOH-tee'],['room','huone','HWOH-neh'],['kitchen','keittiö','KAYT-tyoh'],
+    ['living room','olohuone','OH-loh-HWOH-neh'],['bedroom','makuuhuone','MAH-koo-HWOH-neh'],
+    ['bathroom','kylpyhuone','KUL-puh-HWOH-neh'],['toilet','wc','VEH-seh'],['hallway','eteinen','EH-tay-nen'],
+    ['yard','piha','PEE-hah'],['window','ikkuna','EEK-koo-nah'],['door','ovi','OH-vee'],
+    ['floor','lattia','LAT-tyah'],['ceiling / roof','katto','KAT-toh'],['wall','seinä','SAY-nah'],
+    ['sofa','sohva','SOH-vah'],['bed','sänky','SANK-uh'],['fridge','jääkaappi','YAH-kahp-pee'],
+    ['television','televisio','TEH-leh-VEE-see-oh'],['lamp','lamppu','LAMP-poo'],['blanket','peitto','PAYT-toh'],
+  ]},
+  { id:11, name:'Weather & Seasons', icon:'☀️', words:[
+    ['sun','aurinko','AO-reen-koh'],['cloud','pilvi','PEEL-vee'],['rain','sade','SAH-deh'],
+    ['snow','lumi','LOO-mee'],['wind','tuuli','TOO-lee'],['thunder','ukkonen','OOK-koh-nen'],
+    ['fog','sumu','SOO-moo'],['ice','jää','YAH'],['winter','talvi','TAL-vee'],
+    ['spring','kevät','KEH-vaht'],['summer','kesä','KEH-sah'],['autumn','syksy','SUK-suh'],
+    ['cold','kylmä','KUL-mah'],['warm','lämmin','LAM-meen'],['hot','kuuma','KOO-mah'],
+    ['wet','märkä','MAR-kah'],['dry','kuiva','KWI-vah'],['frost / freezing','pakkanen','PAK-kah-nen'],
+    ['blizzard','lumimyrsky','LOO-mee-MUR-skuh'],['rainbow','sateenkaari','SAH-teen-KAH-ree'],
+  ]},
+  { id:12, name:'Feelings', icon:'😊', words:[
+    ['happy','iloinen','EE-loy-nen'],['sad','surullinen','SOO-rool-lee-nen'],['tired','väsynyt','VAH-suh-nuht'],
+    ['angry','vihainen','VEE-hai-nen'],['scared','pelokas','PEH-loh-kas'],['surprised','yllättynyt','UL-lat-tuh-nuht'],
+    ['loving','rakastava','RAH-kas-tah-vah'],['missing someone','ikävä','EE-kah-vah'],
+    ['hungry','nälkäinen','NAL-kai-nen'],['thirsty','janoinen','YAH-noy-nen'],
+    ['sick','sairas','SAI-ras'],['healthy','terve','TEHR-veh'],['nervous','hermostunut','HEHR-mos-too-noot'],
+    ['excited','innoissaan','EEN-noys-sahn'],['bored','tylsistynyt','TUL-sees-tuh-nuht'],
+    ['shy','ujo','OO-yoh'],['brave','rohkea','ROH-keh-ah'],['blissful','onnellinen','ON-nel-lee-nen'],
+    ['worried','huolissaan','HWOH-lees-sahn'],['proud','ylpeä','UL-peh-ah'],
+  ]},
+  { id:13, name:'Daily Verbs', icon:'🏃', words:[
+    ['to eat','syödä','SYUH-dah'],['to drink','juoda','YWOH-dah'],['to sleep','nukkua','NOOK-koo-ah'],
+    ['to wake up','herätä','HEH-rah-tah'],['to run','juosta','YWOHS-tah'],['to walk','kävellä','KAH-vel-lah'],
+    ['to speak','puhua','POO-hoo-ah'],['to listen','kuunnella','KOON-nel-lah'],['to watch','katsoa','KAT-soh-ah'],
+    ['to read','lukea','LOO-keh-ah'],['to write','kirjoittaa','KEER-yoyt-tah'],['to play','leikkiä','LAYK-kyah'],
+    ['to swim','uida','WEE-dah'],['to jump','hypätä','HUH-pah-tah'],['to sing','laulaa','LAO-lah'],
+    ['to draw','piirtää','PEER-tah'],['to help','auttaa','AOT-tah'],['to wash','pestä','PEHS-tah'],
+    ['to dress','pukea','POO-keh-ah'],['to come','tulla','TOOL-lah'],
+  ]},
+  { id:14, name:'Questions & Phrases', icon:'💬', words:[
+    ['what','mitä','MEE-tah'],['where','missä','MEES-sah'],['who','kuka','KOO-kah'],
+    ['when','milloin','MEEL-loyn'],['why','miksi','MEEK-see'],['how','miten','MEE-ten'],
+    ['how much','kuinka paljon','KWEEN-kah PAL-yon'],['sorry / excuse me','anteeksi','AN-tehk-see'],
+    ['thank you','kiitos','KEE-tohs'],["you're welcome",'ole hyvä','OH-leh HU-vah'],
+    ['yes','kyllä','KUL-lah'],['no','ei','AY'],['maybe','ehkä','EH-kah'],
+    ['hi','hei','HAY'],['hi (casual)','moi','MOY'],['bye (casual)','heippa','HAYP-pah'],
+    ['goodbye','näkemiin','NAH-keh-meen'],['help!','apua','AH-poo-ah'],
+    ["I don't know",'en tiedä','EN TYEH-dah'],['I understand','ymmärrän','UM-mahr-rahn'],
+  ]},
+  { id:15, name:'Time, Money & Age', icon:'⏰', words:[
+    ['hour','tunti','TOON-tee'],['minute','minuutti','MEE-noot-tee'],['second','sekunti','SEH-koon-tee'],
+    ['day','päivä','PAH-ee-vah'],['week','viikko','VEEK-koh'],['month','kuukausi','KOO-kao-see'],
+    ['year','vuosi','VWOH-see'],['morning','aamu','AH-moo'],['afternoon','iltapäivä','IL-tah-PAH-ee-vah'],
+    ['evening','ilta','EEL-tah'],['night','yö','YUH'],['euro','euro','EH-oo-roh'],
+    ['cent','sentti','SENT-tee'],['cheap','halvat','HAL-vat'],['expensive','kallis','KAL-lees'],
+    ['age','ikä','EE-kah'],['birthday','syntymäpäivä','SUN-tuh-mah-PAH-ee-vah'],
+    ['old','vanha','VAN-hah'],['young','nuori','NWOH-ree'],['now','nyt','NUHT'],
+  ]},
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentId = 1;
+let currentMode = 'list';
+let drillState = null;
+
+// ── Build sidebar ─────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const list = document.getElementById('sidebarList');
+  list.innerHTML = '';
+  QUIZZES.forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-btn' + (q.id === currentId ? ' active' : '');
+    btn.id = 'qbtn-' + q.id;
+    btn.innerHTML = `<span class="qbicon">${q.icon}</span><span>${q.id}. ${q.name}</span>`;
+    btn.onclick = () => selectQuiz(q.id);
+    list.appendChild(btn);
+  });
+}
+
+function selectQuiz(id) {
+  currentId = id;
+  currentMode = 'list';
+  drillState = null;
+  document.querySelectorAll('.quiz-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('qbtn-' + id).classList.add('active');
+  render();
+}
+
+// ── Mode switch ───────────────────────────────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  if (mode === 'drill') drillState = null;
+  document.getElementById('btnList').classList.toggle('active', mode === 'list');
+  document.getElementById('btnDrill').classList.toggle('active', mode === 'drill');
+  renderContent();
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
+function render() {
+  const quiz = QUIZZES.find(q => q.id === currentId);
+  document.getElementById('topbarIcon').textContent = quiz.icon;
+  document.getElementById('topbarTitle').textContent = 'Quiz ' + quiz.id + ': ' + quiz.name;
+  document.getElementById('topbarCount').textContent = quiz.words ? quiz.words.length + ' words' : '';
+  const modeBtns = document.getElementById('modeBtns');
+  modeBtns.style.display = quiz.type === 'phonology' ? 'none' : 'flex';
+  document.getElementById('btnList').classList.toggle('active', currentMode === 'list');
+  document.getElementById('btnDrill').classList.toggle('active', currentMode === 'drill');
+  renderContent();
+}
+
+function renderContent() {
+  const quiz = QUIZZES.find(q => q.id === currentId);
+  const el = document.getElementById('content');
+  if (quiz.type === 'phonology') { renderPhonology(el); return; }
+  if (currentMode === 'list') { renderList(el, quiz); return; }
+  renderDrill(el, quiz);
+}
+
+// ── PHONOLOGY ─────────────────────────────────────────────────────────────────
+function renderPhonology(el) {
+  const pairs = [
+    { bk:'A', fr:'Ä', bd:"like 'a' in father", fd:"like 'a' in cat, more forward", bw:[['auto','car'],['talvi','winter']], fw:[['äiti','mother'],['mäki','hill']] },
+    { bk:'O', fr:'Ö', bd:"like 'o' in more", fd:"like 'u' in burn, lips rounded", bw:[['koira','dog'],['poro','reindeer']], fw:[['yö','night'],['tyttö','girl']] },
+    { bk:'U', fr:'Y', bd:"like 'oo' in moon", fd:"like French 'tu', lips forward", bw:[['uusi','new'],['kuusi','six']], fw:[['työ','work'],['syödä','to eat']] },
+  ];
+  const halfHTML = (vowel, desc, words, cls, label) => `
+    <div class="phono-half ${cls}">
+      <div class="phono-label">${label}</div>
+      <div class="phono-vowel-row">
+        <span class="phono-vowel">${vowel}</span>
+        <button class="phono-play" onclick="speak('${vowel.toLowerCase()}')">🔊 play</button>
+      </div>
+      <div class="phono-desc">${desc}</div>
+      ${words.map(([w,m]) => `<button class="phono-word-btn" onclick="speak('${w}')"><span>${w}</span><span class="phono-word-meaning">${m}</span></button>`).join('')}
+    </div>`;
+  el.innerHTML = `<div class="phono-wrap">
+    <p class="phono-intro">Finnish has 8 vowels. Each word uses either <strong>back vowels (a, o, u)</strong> or <strong>front vowels (ä, ö, y)</strong> — never both in the same word! Click any word to hear it.</p>
+    <div class="phono-grid">
+      ${pairs.map(p => `<div class="phono-card">${halfHTML(p.bk,p.bd,p.bw,'back','Back vowel')}${halfHTML(p.fr,p.fd,p.fw,'front','Front vowel')}</div>`).join('')}
+    </div>
+    <div class="harmony-box">
+      <div class="harmony-title">Vowel harmony rule</div>
+      <p class="harmony-text">Back vowels (a, o, u) and front vowels (ä, ö, y) never mix in one word. Neutral vowels e and i can appear in any word.<br>Example: <strong>talvi</strong> (winter) uses back vowels; <strong>tyttö</strong> (girl) uses front vowels.</p>
+    </div>
+  </div>`;
+}
+
+// ── LIST MODE ─────────────────────────────────────────────────────────────────
+function renderList(el, quiz) {
+  const rows = quiz.words.map(([en,fi,h], i) => `
+    <tr>
+      <td class="td-num">${i+1}</td>
+      <td class="td-en">${en}</td>
+      <td class="td-fi">${fi}</td>
+      <td class="td-hint">${h}</td>
+      <td class="td-tts"><button class="tts-btn" onclick="speak('${fi.replace(/'/g,"\\'")}')">🔊</button></td>
+    </tr>`).join('');
+  el.innerHTML = `<table class="list-table">
+    <thead><tr><th>#</th><th>English</th><th>Finnish</th><th>Sounds like</th><th>🔊</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ── DRILL MODE ────────────────────────────────────────────────────────────────
+function initDrill(quiz) {
+  drillState = { cards: shuffle([...quiz.words]), pile: [], idx: 0, ok: 0, round: 1, shown: false, total: quiz.words.length };
+}
+
+function renderDrill(el, quiz) {
+  if (!drillState) initDrill(quiz);
+  const s = drillState;
+  if (s.done) {
+    el.innerHTML = `<div class="drill-done">
+      <div class="done-icon">🏆</div>
+      <div class="done-title">All done!</div>
+      <div class="done-sub">You mastered all ${s.total} words in ${s.round} round${s.round>1?'s':''}!</div>
+      <button class="again-btn" onclick="drillState=null;renderContent()">🔄 Practice again</button>
+    </div>`;
+    return;
+  }
+  const cur = s.cards[s.idx];
+  const pct = Math.round(s.ok / s.total * 100);
+  el.innerHTML = `<div class="drill-wrap">
+    <div class="drill-meta">
+      <span class="drill-count">Card ${s.idx+1} / ${s.cards.length} · round ${s.round}</span>
+      <button class="drill-restart" onclick="drillState=null;renderContent()">↺ restart</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="drill-card" id="drill-card">
+      ${!s.shown ? `
+        <div class="drill-prompt">What is this in Finnish?</div>
+        <div class="drill-word-en">${cur[0]}</div>
+        <button class="reveal-btn" onclick="drillReveal()">Reveal answer</button>
+      ` : `
+        <div class="drill-prompt">${cur[0]}</div>
+        <div class="drill-word-fi">${cur[1]}</div>
+        <div class="drill-hint">[${cur[2]}]</div>
+        <button class="hear-btn" onclick="speak('${cur[1].replace(/'/g,"\\'")}')">🔊 hear again</button>
+        <div class="answer-btns">
+          <button class="btn-still" onclick="drillStill()">🔄 still learning</button>
+          <button class="btn-got" onclick="drillGotIt()">✓ got it!</button>
+        </div>
+      `}
+    </div>
+    <div class="drill-stats">
+      <span>✓ ${s.ok} mastered</span>
+      <span>🔄 ${s.pile.length} to review</span>
+      <span>${pct}% done</span>
+    </div>
+  </div>`;
+}
+
+function drillReveal() {
+  const quiz = QUIZZES.find(q => q.id === currentId);
+  drillState.shown = true;
+  speak(drillState.cards[drillState.idx][1]);
+  renderDrill(document.getElementById('content'), quiz);
+}
+
+function drillGotIt() {
+  const quiz = QUIZZES.find(q => q.id === currentId);
+  const s = drillState;
+  s.ok++; s.shown = false;
+  const n = s.idx + 1;
+  if (n >= s.cards.length) {
+    if (s.pile.length === 0) { s.done = true; }
+    else { s.cards = shuffle([...s.pile]); s.pile = []; s.idx = 0; s.round++; }
+  } else s.idx = n;
+  renderDrill(document.getElementById('content'), quiz);
+}
+
+function drillStill() {
+  const quiz = QUIZZES.find(q => q.id === currentId);
+  const s = drillState;
+  const np = [...s.pile, s.cards[s.idx]];
+  s.shown = false;
+  const n = s.idx + 1;
+  if (n >= s.cards.length) { s.cards = shuffle(np); s.pile = []; s.idx = 0; s.round++; }
+  else { s.pile = np; s.idx = n; }
+  renderDrill(document.getElementById('content'), quiz);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildSidebar();
+selectQuiz(1);
+</script>
+</body>
+</html>
