@@ -122,6 +122,45 @@ html, body { height: 100%; font-family: 'Nunito', 'Arial Rounded MT Bold', sans-
 .done-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 20px; }
 .again-btn { background: var(--purple); color: white; border: none; border-radius: var(--radius); padding: 10px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
 .again-btn:hover { background: var(--purple-fill); }
+
+/* ── PHONE / NARROW SCREENS ── */
+@media (max-width: 640px) {
+  .app { flex-direction: column; height: 100dvh; }
+
+  /* Sidebar becomes a horizontal, swipeable strip of quiz chips */
+  .sidebar { width: 100%; }
+  .sidebar-header { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px 4px; border-bottom: none; }
+  .sidebar-sub { display: none; }
+  .sidebar-list { display: flex; gap: 4px; overflow-x: auto; overflow-y: hidden; padding: 4px 8px 8px; scrollbar-width: none; }
+  .sidebar-list::-webkit-scrollbar { display: none; }
+  .quiz-btn { width: auto; flex-shrink: 0; white-space: nowrap; align-items: center; margin-bottom: 0; padding: 6px 10px; background: rgba(255,255,255,0.06); }
+  .quiz-btn .qbicon { margin-top: 0; }
+
+  .topbar { padding: 8px 12px; gap: 8px; }
+  .topbar-left { min-width: 0; flex-wrap: wrap; column-gap: 6px; row-gap: 0; }
+  .mode-btns { flex-shrink: 0; }
+  .mode-btn { padding: 5px 10px; }
+
+  /* List */
+  .list-table th, .list-table td { padding: 7px 6px; }
+  .list-table th:first-child, .td-num { display: none; }
+  .td-fi { font-size: 14px; word-break: break-word; }
+  .td-hint { word-break: break-word; }
+  .list-table th:last-child { width: 36px; }
+  .tts-btn { padding: 3px 6px; }
+
+  /* Phonology: one card per row, back/front halves side by side */
+  .phono-wrap { padding: 12px; }
+  .phono-grid { grid-template-columns: 1fr; gap: 10px; }
+  .phono-card { display: grid; grid-template-columns: 1fr 1fr; }
+  .phono-half.front { border-top: none; border-left: 1px solid var(--gray-200); }
+
+  /* Drill */
+  .drill-wrap { padding: 14px 12px; }
+  .drill-card { padding: 24px 14px; }
+  .answer-btns { width: 100%; }
+  .btn-still, .btn-got { flex: 1; padding: 11px 8px; }
+}
 </style>
 </head>
 <body>
@@ -333,7 +372,9 @@ function selectQuiz(id) {
   currentMode = 'list';
   drillState = null;
   document.querySelectorAll('.quiz-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('qbtn-' + id).classList.add('active');
+  const btn = document.getElementById('qbtn-' + id);
+  btn.classList.add('active');
+  btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   render();
 }
 
